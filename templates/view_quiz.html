@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}{{ quiz.title }}{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                <h2 class="fw-bold mb-0">{{ quiz.title }}</h2>
+                {% if status == 'upcoming' %}
+                    <span class="badge" style="background: #fef3c7; color: #b45309;">
+                        <i class="fas fa-clock me-1"></i>Upcoming
+                    </span>
+                {% elif status == 'available' %}
+                    <span class="badge" style="background: #d1fae5; color: #065f46;">
+                        <i class="fas fa-check-circle me-1"></i>Available Now
+                    </span>
+                {% elif status == 'expired' %}
+                    <span class="badge" style="background: #fee2e2; color: #991b1b;">
+                        <i class="fas fa-times-circle me-1"></i>Closed
+                    </span>
+                {% else %}
+                    <span class="badge" style="background: #dbeafe; color: #1e40af;">
+                        <i class="fas fa-infinity me-1"></i>Always Open
+                    </span>
+                {% endif %}
+            </div>
+            {% if quiz.description %}
+                <p class="text-muted mb-2">{{ quiz.description }}</p>
+            {% endif %}
+            <small class="text-muted">
+                <i class="fas fa-user-tie me-1"></i>By {{ quiz.teacher.username }} •
+                <i class="far fa-calendar ms-2 me-1"></i>{{ quiz.created_at.strftime('%b %d, %Y') }}
+            </small>
+        </div>
+
+        {% if session.logged_in and session.user_id == quiz.teacher_id %}
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ url_for('add_question', quiz_id=quiz.id) }}" class="btn btn-warning" style="color: white;">
+                    <i class="fas fa-plus me-1"></i> Add Question
+                </a>
+                <a href="{{ url_for('edit_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <form method="POST" action="{{ url_for('delete_quiz', quiz_id=quiz.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Delete this quiz and all its questions?')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Time Info Card -->
+    {% if quiz.start_time or quiz.end_time or quiz.duration_minutes %}
+        <div class="card mb-4" style="background: linear-gradient(135deg, #fffbeb, #ffffff); border: 2px solid #f59e0b;">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3"><i class="fas fa-clock text-warning me-2"></i>Time Rules</h5>
+                <div class="row g-3">
+                    {% if quiz.start_time %}
+                        <div class="col-md-4">
+                            <small class="text-muted"><i class="fas fa-play-circle me-1"></i>Opens</small>
+                            <h6 class="mb-0 fw-bold">{{ quiz.start_time.strftime('%b %d, %Y at %H:%M') }}</h6>
+                        </div>
+                    {% endif %}
+                    {% if quiz.end_time %}
+                        <div class="col-md-4">
+                            <small class="text-muted"><i class="fas fa-stop-circle me-1"></i>Closes</small>
+                            <h6 class="mb-0 fw-bold">{{ quiz.end_time.strftime('%b %d, %Y at %H:%M') }}</h6>
+                        </div>
+                    {% endif %}
+                    {% if quiz.duration_minutes %}
+                        <div class="col-md-4">
+                            <small class="text-muted"><i class="fas fa-hourglass-half me-1"></i>Duration</small>
+                            <h6 class="mb-0 fw-bold">{{ quiz.duration_minutes }} minutes</h6>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Stats -->
+    <div class="row g-3 mb-5">
+        <div class="col-md-4">
+            <div class="p-3 rounded" style="background: linear-gradient(135deg, #e0e7ff, #c7d2fe);">
+                <small class="text-muted"><i class="fas fa-question-circle me-1"></i>Questions</small>
+                <h4 class="mb-0 fw-bold text-primary">{{ quiz.questions|length }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded" style="background: linear-gradient(135deg, #d1fae5, #a7f3d0);">
+                <small class="text-muted"><i class="fas fa-users me-1"></i>Submissions</small>
+                <h4 class="mb-0 fw-bold text-success">{{ quiz.attempts|length }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
+                <small class="text-muted"><i class="fas fa-star me-1"></i>Avg Score</small>
+                <h4 class="mb-0 fw-bold" style="color: #b45309;">
+                    {% if quiz.attempts %}
+                        {{ "%.0f"|format(quiz.attempts|map(attribute='score')|sum / quiz.attempts|map(attribute='total_questions')|sum * 100) }}%
+                    {% else %}
+                        —
+                    {% endif %}
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions for Student -->
+    <div class="d-flex gap-2 flex-wrap mb-4">
+        {% if session.logged_in %}
+            {% if session.role == 'student' %}
+                {% if already_attempted %}
+                    <div class="alert alert-info mb-0 flex-fill">
+                        <i class="fas fa-info-circle me-2"></i>
+                        You already took this quiz. Your score:
+                        <strong>{{ existing_attempt.score }}/{{ existing_attempt.total_questions }}</strong>
+                        <a href="{{ url_for('quiz_results', attempt_id=existing_attempt.id) }}" class="btn btn-sm btn-outline-primary ms-2">
+                            View Results
+                        </a>
+                    </div>
+                {% elif status == 'upcoming' %}
+                    <div class="alert alert-warning mb-0 flex-fill">
+                        <i class="fas fa-clock me-2"></i>
+                        This quiz will open on <strong>{{ quiz.start_time.strftime('%b %d, %Y at %H:%M') }}</strong>.
+                    </div>
+                {% elif status == 'expired' %}
+                    <div class="alert alert-danger mb-0 flex-fill">
+                        <i class="fas fa-times-circle me-2"></i>
+                        This quiz has closed.
+                    </div>
+                {% elif not quiz.questions %}
+                    <div class="alert alert-warning mb-0 flex-fill">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        This quiz has no questions yet.
+                    </div>
+                {% else %}
+                    <a href="{{ url_for('take_quiz', quiz_id=quiz.id) }}" class="btn btn-success btn-lg flex-fill">
+                        <i class="fas fa-play me-1"></i> Take This Quiz
+                    </a>
+                {% endif %}
+            {% elif session.user_id == quiz.teacher_id %}
+                <a href="{{ url_for('submissions', quiz_id=quiz.id) }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-chart-bar me-1"></i> View Submissions
+                </a>
+            {% endif %}
+        {% endif %}
+        <a href="{{ url_for('quizzes') }}" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-arrow-left me-1"></i> Back to Quizzes
+        </a>
+    </div>
+
+    <!-- Question List (for teacher) -->
+    {% if session.logged_in and session.user_id == quiz.teacher_id %}
+        <h4 class="fw-bold mb-3"><i class="fas fa-list-ol me-2 text-primary"></i>Questions</h4>
+        {% if quiz.questions %}
+            <div class="list-group">
+                {% for q in quiz.questions %}
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong>Q{{ loop.index }}.</strong> {{ q.question_text }}
+                                <div class="mt-2 small">
+                                    <span class="badge" style="background: {% if q.correct_answer == 'A' %}#d1fae5; color: #065f46;{% else %}#f1f5f9; color: #64748b;{% endif %}">
+                                        A. {{ q.option_a[:40] }}{% if q.option_a|length > 40 %}...{% endif %}
+                                    </span>
+                                    <span class="badge" style="background: {% if q.correct_answer == 'B' %}#d1fae5; color: #065f46;{% else %}#f1f5f9; color: #64748b;{% endif %}">
+                                        B. {{ q.option_b[:40] }}{% if q.option_b|length > 40 %}...{% endif %}
+                                    </span>
+                                    <span class="badge" style="background: {% if q.correct_answer == 'C' %}#d1fae5; color: #065f46;{% else %}#f1f5f9; color: #64748b;{% endif %}">
+                                        C. {{ q.option_c[:40] }}{% if q.option_c|length > 40 %}...{% endif %}
+                                    </span>
+                                    <span class="badge" style="background: {% if q.correct_answer == 'D' %}#d1fae5; color: #065f46;{% else %}#f1f5f9; color: #64748b;{% endif %}">
+                                        D. {{ q.option_d[:40] }}{% if q.option_d|length > 40 %}...{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <span class="badge" style="background: var(--gradient-gold); color: white;">
+                                ✓ {{ q.correct_answer }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <p class="text-muted mb-3">No questions added yet.</p>
+                <a href="{{ url_for('add_question', quiz_id=quiz.id) }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i> Add First Question
+                </a>
+            </div>
+        {% endif %}
+    {% endif %}
+{% endblock %}

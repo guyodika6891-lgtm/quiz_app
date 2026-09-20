@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Add Question{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem;">❓</div>
+                <h2 class="fw-bold mt-2">Add Question</h2>
+                <p class="text-muted">Quiz: <strong>{{ quiz.title }}</strong> ({{ quiz.questions|length }} existing)</p>
+            </div>
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="question_text" class="form-label"><i class="fas fa-question-circle me-1 text-primary"></i> Question *</label>
+                    <textarea class="form-control" id="question_text" name="question_text" rows="3"
+                              placeholder="Enter your question here..." required></textarea>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label for="option_a" class="form-label"><i class="fas fa-list me-1 text-primary"></i> Option A *</label>
+                        <input type="text" class="form-control" id="option_a" name="option_a" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="option_b" class="form-label"><i class="fas fa-list me-1 text-primary"></i> Option B *</label>
+                        <input type="text" class="form-control" id="option_b" name="option_b" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="option_c" class="form-label"><i class="fas fa-list me-1 text-primary"></i> Option C *</label>
+                        <input type="text" class="form-control" id="option_c" name="option_c" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="option_d" class="form-label"><i class="fas fa-list me-1 text-primary"></i> Option D *</label>
+                        <input type="text" class="form-control" id="option_d" name="option_d" required>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label"><i class="fas fa-check-circle me-1 text-success"></i> Correct Answer *</label>
+                    <div class="row g-2">
+                        <div class="col-3">
+                            <input type="radio" class="btn-check" name="correct_answer" id="ans_a" value="A" required>
+                            <label class="btn btn-outline-success w-100" for="ans_a">A</label>
+                        </div>
+                        <div class="col-3">
+                            <input type="radio" class="btn-check" name="correct_answer" id="ans_b" value="B">
+                            <label class="btn btn-outline-success w-100" for="ans_b">B</label>
+                        </div>
+                        <div class="col-3">
+                            <input type="radio" class="btn-check" name="correct_answer" id="ans_c" value="C">
+                            <label class="btn btn-outline-success w-100" for="ans_c">C</label>
+                        </div>
+                        <div class="col-3">
+                            <input type="radio" class="btn-check" name="correct_answer" id="ans_d" value="D">
+                            <label class="btn btn-outline-success w-100" for="ans_d">D</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" name="add_another" value="1" class="btn btn-warning flex-fill py-3" style="color: white;">
+                        <i class="fas fa-plus me-1"></i> Save & Add Another
+                    </button>
+                    <button type="submit" class="btn btn-primary flex-fill py-3">
+                        <i class="fas fa-check me-1"></i> Save & Finish
+                    </button>
+                </div>
+            </form>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-1"></i> Back to Quiz
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock %}

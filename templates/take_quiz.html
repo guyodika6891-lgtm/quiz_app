@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Take Quiz - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+    <!-- Timer (if duration set) -->
+    {% if quiz.duration_minutes %}
+        <div class="sticky-top" style="z-index: 100; top: 80px;">
+            <div class="alert alert-warning mb-4 d-flex justify-content-between align-items-center" style="box-shadow: 0 8px 24px rgba(245, 158, 11, 0.3);">
+                <div>
+                    <i class="fas fa-hourglass-half me-2"></i>
+                    <strong>Time Remaining:</strong>
+                </div>
+                <h3 class="mb-0 fw-bold" id="timer" style="font-family: monospace;">--:--</h3>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="text-center mb-5">
+        <h2 class="fw-bold mb-2">{{ quiz.title }}</h2>
+        {% if quiz.description %}
+            <p class="text-muted">{{ quiz.description }}</p>
+        {% endif %}
+        <div class="d-flex gap-2 justify-content-center flex-wrap">
+            <span class="badge" style="background: var(--gradient-primary); color: white;">
+                <i class="fas fa-question-circle me-1"></i>{{ quiz.questions|length }} Questions
+            </span>
+            {% if quiz.duration_minutes %}
+                <span class="badge" style="background: var(--gradient-gold); color: white;">
+                    <i class="fas fa-clock me-1"></i>{{ quiz.duration_minutes }} minutes
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <form method="POST" id="quizForm">
+        {% for question in quiz.questions %}
+            <div class="card mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-4">
+                        <span class="badge" style="background: var(--gradient-primary); color: white; margin-right: 8px;">
+                            Q{{ loop.index }}
+                        </span>
+                        {{ question.question_text }}
+                    </h5>
+
+                    <div class="list-group">
+                        {% for letter, option in [('A', question.option_a), ('B', question.option_b), ('C', question.option_c), ('D', question.option_d)] %}
+                            <label class="list-group-item d-flex align-items-center p-3" style="cursor: pointer; border: 2px solid #e2e8f0; border-radius: 12px; margin-bottom: 8px; transition: all 0.2s;">
+                                <input class="form-check-input me-3" type="radio" name="question_{{ question.id }}" value="{{ letter }}" required>
+                                <span class="badge me-3" style="background: #e0e7ff; color: #4338ca;">{{ letter }}</span>
+                                <span>{{ option }}</span>
+                            </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="d-flex gap-2 flex-wrap mb-3">
+            <button type="submit" class="btn btn-success btn-lg flex-fill py-3" onclick="return confirm('Submit your answers?')">
+                <i class="fas fa-paper-plane me-1"></i> Submit Quiz
+            </button>
+            <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary btn-lg" onclick="return confirm('Are you sure? Your answers will not be saved.')">
+                Cancel
+            </a>
+        </div>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+{% if quiz.duration_minutes %}
+<script>
+    // Timer logic
+    const duration = {{ quiz.duration_minutes }} * 60; // seconds
+    let timeLeft = duration;
+
+    const timerEl = document.getElementById('timer');
+    const formEl = document.getElementById('quizForm');
+
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+
+        timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+        // Change color as time runs low
+        if (timeLeft <= 60) {
+            timerEl.style.color = '#dc2626';
+            timerEl.style.animation = 'pulse 1s infinite';
+        } else if (timeLeft <= 300) {
+            timerEl.style.color = '#f59e0b';
+        }
+
+        if (timeLeft <= 0) {
+            clearInterval(interval);
+            alert('⏰ Time is up! Your quiz will be submitted automatically.');
+            formEl.submit();
+            return;
+        }
+
+        timeLeft--;
+    }
+
+    // Start timer
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+
+    // Warn on page leave
+    window.addEventListener('beforeunload', function (e) {
+        if (timeLeft > 0) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    // Remove warning on submit
+    formEl.addEventListener('submit', function() {
+        window.onbeforeunload = null;
+    });
+</script>
+<style>
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+</style>
+{% endif %}
+{% endblock %}

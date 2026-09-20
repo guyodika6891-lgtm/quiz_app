@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Quiz{% endblock %}
+
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-9">
+            <div class="text-center mb-4">
+                <div style="font-size: 3rem;">✏️</div>
+                <h2 class="fw-bold mt-2">Edit Quiz</h2>
+            </div>
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="title" class="form-label"><i class="fas fa-heading me-1 text-primary"></i> Quiz Title *</label>
+                    <input type="text" class="form-control" id="title" name="title"
+                           value="{{ quiz.title }}" required>
+                </div>
+
+                <div class="mb-4">
+                    <label for="description" class="form-label"><i class="fas fa-align-left me-1 text-primary"></i> Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ quiz.description or '' }}</textarea>
+                </div>
+
+                <!-- TIME SETTINGS -->
+                <div class="card mb-4" style="background: linear-gradient(135deg, #fffbeb, #ffffff); border: 2px solid #f59e0b;">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3"><i class="fas fa-clock text-warning me-2"></i>Time Settings</h5>
+
+                        <!-- WINDOW -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label for="start_time" class="form-label">
+                                    <i class="fas fa-play-circle me-1 text-success"></i> Opens At *
+                                </label>
+                                <input type="datetime-local" class="form-control" id="start_time" name="start_time"
+                                       value="{{ quiz.start_time.strftime('%Y-%m-%dT%H:%M') if quiz.start_time else '' }}" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="end_time" class="form-label">
+                                    <i class="fas fa-stop-circle me-1 text-danger"></i> Closes At *
+                                </label>
+                                <input type="datetime-local" class="form-control" id="end_time" name="end_time"
+                                       value="{{ quiz.end_time.strftime('%Y-%m-%dT%H:%M') if quiz.end_time else '' }}" required>
+                            </div>
+                        </div>
+
+                        <!-- WINDOW SUMMARY -->
+                        <div id="windowSummary" class="alert alert-info py-2 mb-4 d-none">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            <strong>Window length:</strong> <span id="windowLength">—</span>
+                        </div>
+
+                        <!-- DURATION TYPE -->
+                        <h6 class="fw-bold mb-3"><i class="fas fa-hourglass-half me-2 text-primary"></i>Time Limit per Attempt</h6>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="duration_type" id="dt_auto" value="auto">
+                                <label class="btn btn-outline-primary w-100 py-3" for="dt_auto">
+                                    <i class="fas fa-magic me-1"></i> Auto
+                                    <br><small class="text-muted" style="font-size: 0.7rem;">Same as window</small>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="duration_type" id="dt_custom" value="custom">
+                                <label class="btn btn-outline-primary w-100 py-3" for="dt_custom">
+                                    <i class="fas fa-sliders-h me-1"></i> Custom
+                                    <br><small class="text-muted" style="font-size: 0.7rem;">Choose minutes</small>
+                                </label>
+                            </div>
+                            <div class="col-md-4">
+                                <input type="radio" class="btn-check" name="duration_type" id="dt_none" value="none">
+                                <label class="btn btn-outline-primary w-100 py-3" for="dt_none">
+                                    <i class="fas fa-infinity me-1"></i> No Limit
+                                    <br><small class="text-muted" style="font-size: 0.7rem;">Full window</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- CUSTOM DURATION INPUT -->
+                        <div id="customDurationBox" class="d-none">
+                            <label for="custom_duration" class="form-label">
+                                <i class="fas fa-edit me-1 text-primary"></i> Enter duration (minutes) *
+                            </label>
+                            <input type="number" class="form-control" id="custom_duration" min="1"
+                                   value="{{ quiz.duration_minutes or '' }}" placeholder="e.g., 30">
+                            <div class="form-text" id="customHint">
+                                Must be less than or equal to the window length.
+                            </div>
+                        </div>
+
+                        <!-- PREVIEW -->
+                        <div id="durationPreview" class="alert alert-success py-3 mb-0 mt-3">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Students will have <strong id="previewValue">the full window</strong> to complete the quiz.
+                        </div>
+
+                        <!-- Hidden field that actually gets submitted -->
+                        <input type="hidden" id="duration_minutes" name="duration_minutes" value="{{ quiz.duration_minutes or '' }}">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary flex-fill py-3">
+                        <i class="fas fa-save me-1"></i> Update Quiz
+                    </button>
+                    <a href="{{ url_for('view_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary flex-fill py-3">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const startInput = document.getElementById('start_time');
+    const endInput = document.getElementById('end_time');
+    const windowSummary = document.getElementById('windowSummary');
+    const windowLength = document.getElementById('windowLength');
+    const customBox = document.getElementById('customDurationBox');
+    const customInput = document.getElementById('custom_duration');
+    const customHint = document.getElementById('customHint');
+    const previewValue = document.getElementById('previewValue');
+    const durationHidden = document.getElementById('duration_minutes');
+    const radios = document.querySelectorAll('input[name="duration_type"]');
+
+    // Pre-select radio based on existing quiz data
+    const existingDuration = {{ quiz.duration_minutes if quiz.duration_minutes else 'null' }};
+
+    function initRadio() {
+        if (existingDuration === null || existingDuration === undefined) {
+            // No duration = no limit OR check if no times set
+            document.getElementById('dt_none').checked = true;
+        } else {
+            // Check if duration equals window
+            const w = getWindowMinutes();
+            if (w && w === existingDuration) {
+                document.getElementById('dt_auto').checked = true;
+            } else {
+                document.getElementById('dt_custom').checked = true;
+                customInput.value = existingDuration;
+            }
+        }
+        updateDuration();
+    }
+
+    function getWindowMinutes() {
+        if (!startInput.value || !endInput.value) return null;
+        const start = new Date(startInput.value);
+        const end = new Date(endInput.value);
+        const diff = Math.round((end - start) / 60000);
+        return diff > 0 ? diff : null;
+    }
+
+    function formatMinutes(mins) {
+        if (mins < 60) return mins + ' minutes';
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        return m === 0 ? h + ' hour(s)' : h + 'h ' + m + 'm';
+    }
+
+    function updateDuration() {
+        const window = getWindowMinutes();
+
+        if (window) {
+            windowSummary.classList.remove('d-none');
+            windowLength.textContent = formatMinutes(window);
+        } else {
+            windowSummary.classList.add('d-none');
+        }
+
+        let type = 'auto';
+        radios.forEach(r => { if (r.checked) type = r.value; });
+
+        if (type === 'custom') {
+            customBox.classList.remove('d-none');
+            customInput.required = true;
+
+            const custom = parseInt(customInput.value);
+
+            if (window && custom) {
+                if (custom > window) {
+                    customHint.innerHTML = '<i class="fas fa-exclamation-triangle text-danger"></i> Custom duration can\'t exceed window (' + formatMinutes(window) + ')';
+                    customHint.className = 'form-text text-danger';
+                    previewValue.textContent = '⚠️ Fix the value above';
+                    durationHidden.value = '';
+                } else {
+                    customHint.innerHTML = '<i class="fas fa-check-circle text-success"></i> Valid: ' + formatMinutes(custom) + ' per student';
+                    customHint.className = 'form-text text-success';
+                    previewValue.textContent = formatMinutes(custom);
+                    durationHidden.value = custom;
+                }
+            } else {
+                customHint.innerHTML = 'Must be less than or equal to the window length.';
+                customHint.className = 'form-text';
+                previewValue.textContent = '(enter a value)';
+                durationHidden.value = '';
+            }
+        } else if (type === 'auto') {
+            customBox.classList.add('d-none');
+            customInput.required = false;
+
+            if (window) {
+                previewValue.textContent = 'the full window (' + formatMinutes(window) + ')';
+                durationHidden.value = window;
+            } else {
+                previewValue.textContent = '(set times above)';
+                durationHidden.value = '';
+            }
+        } else {
+            customBox.classList.add('d-none');
+            customInput.required = false;
+            previewValue.textContent = 'unlimited time within the window';
+            durationHidden.value = '';
+        }
+    }
+
+    startInput.addEventListener('change', updateDuration);
+    startInput.addEventListener('input', updateDuration);
+    endInput.addEventListener('change', updateDuration);
+    endInput.addEventListener('input', updateDuration);
+    customInput.addEventListener('input', updateDuration);
+    radios.forEach(r => r.addEventListener('change', updateDuration));
+
+    initRadio();
+</script>
+{% endblock %}

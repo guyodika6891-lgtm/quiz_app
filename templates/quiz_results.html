@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Quiz Results{% endblock %}
+
+{% block content %}
+    {% set percent = (attempt.score / attempt.total_questions * 100) | round | int %}
+    {% set color = '#10b981' if percent >= 70 else ('#f59e0b' if percent >= 50 else '#ef4444') %}
+
+    <div class="text-center py-4">
+        <div style="font-size: 5rem;">
+            {% if percent >= 90 %}🏆
+            {% elif percent >= 70 %}🎉
+            {% elif percent >= 50 %}👍
+            {% else %}📚
+            {% endif %}
+        </div>
+        <h2 class="fw-bold mt-3 mb-2">Quiz Complete!</h2>
+        <p class="text-muted mb-4">{{ attempt.quiz.title }}</p>
+
+        <!-- Score Circle -->
+        <div class="d-flex justify-content-center mb-4">
+            <div class="rounded-circle d-flex flex-column align-items-center justify-content-center"
+                 style="width: 180px; height: 180px; background: {{ color }}; color: white; box-shadow: 0 20px 50px {{ color }}40;">
+                <h1 class="mb-0 fw-bold" style="font-size: 3rem;">{{ percent }}%</h1>
+                <small style="font-size: 0.9rem; opacity: 0.9;">{{ attempt.score }}/{{ attempt.total_questions }}</small>
+            </div>
+        </div>
+
+        <!-- Message -->
+        <h4 class="fw-bold mb-4" style="color: {{ color }};">
+            {% if percent >= 90 %}Outstanding! 🌟
+            {% elif percent >= 70 %}Great job! 👏
+            {% elif percent >= 50 %}Good effort! 💪
+            {% else %}Keep practicing! 📖
+            {% endif %}
+        </h4>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="p-3 rounded text-center" style="background: #f8fafc;">
+                <small class="text-muted">Correct</small>
+                <h4 class="mb-0 fw-bold text-success">{{ attempt.score }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded text-center" style="background: #f8fafc;">
+                <small class="text-muted">Wrong</small>
+                <h4 class="mb-0 fw-bold text-danger">{{ attempt.total_questions - attempt.score }}</h4>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="p-3 rounded text-center" style="background: #f8fafc;">
+                <small class="text-muted">Submitted</small>
+                <h5 class="mb-0 fw-bold">{{ attempt.submitted_at.strftime('%b %d') }}</h5>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('quizzes') }}" class="btn btn-primary flex-fill">
+            <i class="fas fa-book me-1"></i> Browse More Quizzes
+        </a>
+        <a href="{{ url_for('my_attempts') }}" class="btn btn-success flex-fill">
+            <i class="fas fa-history me-1"></i> My Attempts
+        </a>
+    </div>
+{% endblock %}
