@@ -54,5 +54,5 @@ A full-featured online quiz platform where teachers create quizzes and students 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/username/quiz_app.git
+   git clone https://github.com/guyodika6891-lgtm/quiz_app.git
    cd quiz_app
