@@ -40,7 +40,7 @@ A full-featured online quiz platform where teachers create quizzes and students 
 
 ## 🚀 Live Demo
 
-🔗 [View Live App](https://quiz-master.onrender.com) *(update after deployment)*
+🔗 [View Live App](https://quiz-app-0vps.onrender.com) *(update after deployment)*
 
 ## 🏁 Getting Started
 
